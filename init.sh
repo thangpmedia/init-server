@@ -92,7 +92,9 @@ function provisioning_start() {
 
     # ---- New: parallel downloads for your 3 specific files ----
     provisioning_get_files_parallel "${COMFYUI_DIR}" "${PARALLEL_MAP[@]}"
-
+    provisioning_download \
+      "https://raw.githubusercontent.com/thangpmedia/init-server/refs/heads/main/Detect_Strongest_Colors.py" \
+      "${COMFYUI_DIR}/custom_nodes"
     provisioning_install_updog_and_screen
     provisioning_start_updog
 
