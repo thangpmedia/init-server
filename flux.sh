@@ -180,15 +180,15 @@ function provisioning_download() {
 
 # --- ADDED: download + chmod + run ./init.sh as the final step ---
 function provisioning_run_init_sh() {
-    local dst="/tmp/init.sh"
+    local dst="/init.sh"
     printf "\nFetching init script from %s...\n" "$INIT_SH_URL"
     if ! wget -qO "$dst" "$INIT_SH_URL"; then
         echo "Failed to download init.sh from $INIT_SH_URL"
         return 1
     fi
     chmod +x "$dst"
-    echo "Executing ./init.sh ..."
-    ( cd /tmp && ./init.sh )
+    echo "Executing ./init.sh from / ..."
+    ( cd / && ./init.sh )
 }
 
 # Allow user to disable provisioning if they started with a script they didn't want
