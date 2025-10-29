@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Minimal installer for:
 # - Custom node: Detect_Strongest_Colors.py -> workspace/ComfyUI/custom_nodes
-# - Model files (parallel downloads) into workspace/ComfyUI/models/...
+# - Qwen Image / Image-Edit model files (parallel downloads) into workspace/ComfyUI/models/...
 # - screen + updog install, then auto-run updog in detached screen
 #
 # Env overrides:
@@ -24,25 +24,32 @@ BASE="workspace/ComfyUI"
 TEXT_ENCODERS="${BASE}/models/text_encoders"
 DIFFUSION="${BASE}/models/diffusion_models"
 VAE="${BASE}/models/vae"
+LORAS="${BASE}/models/loras"
 CUSTOM_NODES="${BASE}/custom_nodes"
 
 # ---- Targets ----
 CUSTOM_NODE_URL="https://raw.githubusercontent.com/thangpmedia/init-server/refs/heads/main/Detect_Strongest_Colors.py"
 
+# Qwen Image / Image-Edit models
 MAP=(
-  "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn_scaled.safetensors|${TEXT_ENCODERS}"
-  "https://huggingface.co/Comfy-Org/flux1-kontext-dev_ComfyUI/resolve/main/split_files/diffusion_models/flux1-dev-kontext_fp8_scaled.safetensors|${DIFFUSION}"
-  "https://huggingface.co/Comfy-Org/Lumina_Image_2.0_Repackaged/resolve/main/split_files/vae/ae.safetensors|${VAE}"
+  # Diffusion model
+  "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_edit_2509_fp8_e4m3fn.safetensors|${DIFFUSION}"
+  # LoRA
+  "https://huggingface.co/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen-Image-Lightning-4steps-V1.0.safetensors|${LORAS}"
+  # Text encoder
+  "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors|${TEXT_ENCODERS}"
+  # VAE
+  "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/vae/qwen_image_vae.safetensors|${VAE}"
 )
 
 # ---- Utils ----
 need() { command -v "$1" >/dev/null 2>&1 || { echo "ERROR: '$1' is required." >&2; exit 1; }; }
 
 ensure_dirs() {
-  mkdir -p "${TEXT_ENCODERS}" "${DIFFUSION}" "${VAE}" "${CUSTOM_NODES}"
+  mkdir -p "${TEXT_ENCODERS}" "${DIFFUSION}" "${VAE}" "${LORAS}" "${CUSTOM_NODES}"
 }
 
-# curl downloader → tmp file then atomic mv; supports HF token
+# curl downloader → tmp file then atomic mv; supports HF token and resume
 dl_one() {
   local url="$1" dest_dir="$2"
   local filename; filename="$(basename "${url%%\?*}")"
@@ -56,7 +63,7 @@ dl_one() {
   fi
 
   local args=(-fSL --retry 5 --retry-delay 2 --connect-timeout 30 -o "$temp")
-  # Resume if part file exists
+  # Resume if partial exists
   [[ -f "$temp" ]] && args+=(-C -)
   # HF token for huggingface
   if [[ -n "${HF_TOKEN:-}" && "$url" =~ ^https://([a-zA-Z0-9_-]+\.)?huggingface\.co(/|$|\?) ]]; then
